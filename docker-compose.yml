@@ -41,16 +41,6 @@ services:
       - POSTGRES_PASSWORD=changeme
       - POSTGRES_DB=alphadb
 
-  redis:
-    image: library/redis:7.0-alpine
-    ports:
-      - 6379:6379
-    restart: unless-stopped
-    networks:
-      - saleor-backend-tier
-    volumes:
-      - saleor-redis:/data
-
 volumes:
   alphabroder-db:
     driver: local
