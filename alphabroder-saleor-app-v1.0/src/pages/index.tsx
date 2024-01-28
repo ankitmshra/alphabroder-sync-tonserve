@@ -1,8 +1,12 @@
+'use client'
 import { actions, useAppBridge } from "@saleor/app-sdk/app-bridge";
 import { Box, Button, Input, Text } from "@saleor/macaw-ui";
 import { NextPage } from "next";
 import Link from "next/link";
 import { MouseEventHandler, useEffect, useState } from "react";
+import styles from '../styles/Header.module.css';
+
+
 
 const AddToSaleorForm = () => (
   <Box
@@ -32,13 +36,34 @@ const AddToSaleorForm = () => (
  * This is page publicly accessible from your app.
  * You should probably remove it.
  */
+interface Product {
+  product_number: string;
+  short_description: string;
+  brand_name: string;
+  category: string;
+  full_feature_description: string;
+  // Add other properties as needed
+}
 const IndexPage: NextPage = () => {
   const { appBridgeState, appBridge } = useAppBridge();
   const [mounted, setMounted] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState<any>([]);
+  const [loading, setLoading] = useState(false);
+  const [productData, setProductData] = useState<Product[]>([]);
+  const [showComponent, setShowComponent] = useState(true); // New state variable
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+
+
+
+
 
   useEffect(() => {
     setMounted(true);
+    fetchProducts();
   }, []);
+ 
 
   const handleLinkClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
     /**
@@ -62,146 +87,118 @@ const IndexPage: NextPage = () => {
 
   const isLocalHost = global.location.href.includes("localhost");
 
+  const handleSearch = () => {
+    setLoading(true);
+  
+    fetch(`http://alpapi.tonserve.com/api/${searchTerm}`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Search results:', data);
+  
+        setSearchResults(data);
+        setProductData(data.results || []);
+  
+        setLoading(false);
+        setShowComponent(false);
+      })
+      .catch(error => {
+        setLoading(false);
+        setSearchResults([]);
+        console.error('Error fetching data:', error);
+        // You can handle the error here, for example, display an error message to the user
+        // or perform any other action you see fit.
+      });
+  };
+  
+
+  const fetchProducts = () => {
+    // Set loading to true while fetching data
+    setLoading(true);
+
+    // Perform the fetch request for the product grid
+    fetch('http://alpapi.tonserve.com/api/products/?page=5&page_size=10', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+      .then(response => response.json())
+      .then(data => {
+        // Handle the product grid data as needed
+        console.log('Product grid data:', data);
+
+        // Update search results state
+        setProductData(data.results || []); // Assuming the products are in the 'results' property
+      })
+      .catch(error => {
+        setLoading(false);
+        console.error('Error fetching product grid data:', error);
+      })
+      .finally(() => {
+        // Set loading to false after fetch completes
+        setLoading(false);
+      });
+  };
+
   return (
     <Box padding={8}>
-      <Text variant={"hero"}>Welcome to Saleor App Template (Next.js) 🚀</Text>
-      <Text as={"p"} marginY={4}>
-        Saleor App Template is a minimalistic boilerplate that provides a working example of a
-        Saleor app.
-      </Text>
-      {appBridgeState?.ready && mounted && (
-        <Link href="/actions">
-          <Button variant="secondary">See what your app can do →</Button>
-        </Link>
+      <header className={styles.header}>
+        <h1>Alphabroder</h1>
+        <div className={styles.searchContainer}>
+          <input
+            type="text"
+            placeholder="Search..."
+            className={styles.searchInput}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button onClick={handleSearch} className={styles.searchButton}>Search</button>
+        </div>
+      </header>
+
+      {loading && <p>Loading...</p>}
+
+{!loading && searchResults.length != 0  && (
+  <div>
+   
+      <div key={searchResults.product_number}>
+        <h2>{searchResults.short_description}</h2>
+        <p>Brand: {searchResults.brand_name}</p>
+        <p>Category: {searchResults.category}</p>
+        <p>Description: {searchResults.full_feature_description}</p>
+      </div>
+ 
+  </div>
+)}
+
+{showComponent && !loading && productData.length != 0 && (
+        // Render the product grid
+        <div className={styles.productGrid}>
+          {productData.map((product: Product) => (
+            <div  key={product.product_number} className={styles.productCard}>
+              <h2>{product.short_description}</h2>
+              <p>Brand: {product.brand_name}</p>
+              <p>Category: {product.category}</p>
+              {/* Add more information as needed */}
+            </div>
+          ))}
+        </div>
       )}
 
-      <Text as={"p"} marginTop={8}>
-        Explore the App Template by visiting:
-      </Text>
-      <ul>
-        <li>
-          <code>/src/pages/api/manifest</code> - the{" "}
-          <a
-            href="https://docs.saleor.io/docs/3.x/developer/extending/apps/manifest"
-            target="_blank"
-            rel="noreferrer"
-          >
-            App Manifest
-          </a>
-          .
-        </li>
-        <li>
-          <code>/src/pages/api/webhooks/order-created</code> - an example <code>ORDER_CREATED</code>{" "}
-          webhook handler.
-        </li>
-        <li>
-          <code>/graphql</code> - the pre-defined GraphQL queries.
-        </li>
-        <li>
-          <code>/generated/graphql.ts</code> - the code generated for those queries by{" "}
-          <a target="_blank" rel="noreferrer" href="https://the-guild.dev/graphql/codegen">
-            GraphQL Code Generator
-          </a>
-          .
-        </li>
-      </ul>
-      <Text variant={"heading"} marginTop={8} as={"h2"}>
-        Resources
-      </Text>
-      <ul>
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            href="https://docs.saleor.io/docs/3.x/developer/extending/apps/key-concepts"
-            rel="noreferrer"
-          >
-            <Text color={"text3Decorative"}>Apps documentation </Text>
-          </a>
-        </li>
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            rel="noreferrer"
-            href="https://docs.saleor.io/docs/3.x/developer/extending/apps/developing-with-tunnels"
-          >
-            <Text color={"text3Decorative"}>Tunneling the app</Text>
-          </a>
-        </li>
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            rel="noreferrer"
-            href="https://github.com/saleor/app-examples"
-          >
-            <Text color={"text3Decorative"}>App Examples repository</Text>
-          </a>
-        </li>
 
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            rel="noreferrer"
-            href="https://github.com/saleor/saleor-app-sdk"
-          >
-            <Text color={"text3Decorative"}>Saleor App SDK</Text>
-          </a>
-        </li>
 
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            href="https://github.com/saleor/saleor-cli"
-            rel="noreferrer"
-          >
-            <Text color={"text3Decorative"}>Saleor CLI</Text>
-          </a>
-        </li>
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            href="https://github.com/saleor/apps"
-            rel="noreferrer"
-          >
-            <Text color={"text3Decorative"}>Saleor App Store - official apps by Saleor Team</Text>
-          </a>
-        </li>
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            href="https://macaw-ui-next.vercel.app/?path=/docs/getting-started-installation--docs"
-            rel="noreferrer"
-          >
-            <Text color={"text3Decorative"}>Macaw UI - official Saleor UI library</Text>
-          </a>
-        </li>
-        <li>
-          <a
-            onClick={handleLinkClick}
-            target="_blank"
-            href="https://nextjs.org/docs"
-            rel="noreferrer"
-          >
-            <Text color={"text3Decorative"}>Next.js documentation</Text>
-          </a>
-        </li>
-      </ul>
-
-      {mounted && !isLocalHost && !appBridgeState?.ready && (
-        <>
-          <Text marginBottom={4} as={"p"}>
-            Install this app in your Dashboard and get extra powers!
-          </Text>
-          <AddToSaleorForm />
-        </>
-      )}
-    </Box>
+  
+</Box>
   );
 };
 
