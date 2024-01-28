@@ -1,0 +1,60 @@
+version: "3.4"
+
+services:
+
+  api:
+    build:
+      context: ./alphabroder
+      dockerfile: Dockerfile
+    ports:
+      - 3050:3050
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    env_file:
+      - alphabroder.env
+    depends_on:
+      - alphabroder-db
+
+  alphabroder-saleor-app:
+    build:
+      context: ./alphabroder-saleor-app-v1.0
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+
+  alphabroder-db:
+    image: library/postgres:13-alpine
+    ports:
+      - 5433:5432
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    volumes:
+      - alphabroder-db:/var/lib/postgresql/data
+    environment:
+      - "POSTGRES_HOST_AUTH_METHOD=trust"
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=changeme
+      - POSTGRES_DB=alphadb
+
+  redis:
+    image: library/redis:7.0-alpine
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+    networks:
+      - saleor-backend-tier
+    volumes:
+      - saleor-redis:/data
+
+volumes:
+  alphabroder-db:
+    driver: local
+
+networks:
+  saleor-backend-tier:
+    driver: bridge
