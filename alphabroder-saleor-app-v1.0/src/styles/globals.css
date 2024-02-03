@@ -5,3 +5,25 @@ a {
 code {
   background-color: var(--mu-colors-background-surface-brand-subdued);
 }
+
+.prodPagination{
+  display: flex;
+  justify-content: center;
+  margin: 30px;
+}
+.prodPagination button{
+  margin: 20px;
+}
+.prodButton{
+  display: flex !important;
+}
+.prodButton button{
+  font-size: 12px !important;
+  margin: 10px 5px;
+}
+.prodButton button:nth-child(1){
+  background-color: rgba(83, 152, 255, 0.856);
+}
+.searchBackBtn {
+padding: 20px;
+}
